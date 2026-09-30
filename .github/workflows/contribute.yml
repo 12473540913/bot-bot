@@ -1,0 +1,50 @@
+name: Contribution Bot
+
+on:
+  schedule:
+    # GitHub Actions cron uses UTC.
+    # Every 2 hours, at minute 17, gives 12 opportunities per UTC day.
+    - cron: "17 */2 * * *"
+
+  # Useful for testing from the Actions tab.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contribution-bot
+  cancel-in-progress: false
+
+jobs:
+  contribute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run contribution decision
+        run: python bot/contribute.py
+
+      - name: Commit if something changed
+        shell: bash
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No contribution this run."
+            exit 0
+          fi
+
+          git config user.name "12473540913"
+          git config user.email "42824056+12473540913@users.noreply.github.com"
+
+          git add data/activity.log
+          git commit -m "chore: automated activity"
+          git push
