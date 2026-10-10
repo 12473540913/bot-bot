@@ -19,13 +19,20 @@ def stable_int(text: str) -> int:
 
 def selected_slots_for_day(day: str) -> set[int]:
     """
-    Pick an exact daily contribution target from 0..12, then choose that
-    many of the 12 two-hour slots for the day.
+    Pick a daily target: 0 with probability 1/7, 1..8 with probability 4/7,
+    or 9..12 with probability 2/7. Then choose that many of the 12 two-hour
+    slots for the day.
 
     The selection is deterministic for a given day, so rerunning the same
     workflow slot will not unpredictably change the day's plan.
     """
-    target = stable_int(f"target:{day}") % 13  # 0..12 inclusive
+    group = stable_int(f"target-group:{day}") % 7
+    if group == 0:
+        target = 0
+    elif group < 5:
+        target = 1 + stable_int(f"target-count:{day}") % 8
+    else:
+        target = 9 + stable_int(f"target-count:{day}") % 4
 
     rng = random.Random(stable_int(f"slots:{day}"))
     slots = list(range(12))
